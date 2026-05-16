@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* Default: Sunset (Laranja) */
+  --background: #44403C;
+  --foreground: #FFFFFF;
+  --primary: #F97316;
+  --primary-foreground: #FFFFFF;
+  --muted: #2A2928;
+  --muted-foreground: #A1A1AA;
+  --border: #333230;
+  --input: #2A2928;
+  --card: #232221;
+  --card-foreground: #FFFFFF;
+  --sidebar: #1E1D1C;
+  --sidebar-foreground: #FFFFFF;
+}
+
+.theme-cosmic {
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --primary: #6366F1;
+  --primary-foreground: #FFFFFF;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --border: #334155;
+  --input: #1E293B;
+  --card: #1E293B;
+  --card-foreground: #F8FAFC;
+  --sidebar: #020617;
+}
+
+.theme-dracula {
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  --primary: #bd93f9;
+  --primary-foreground: #282a36;
+  --muted: #44475a;
+  --muted-foreground: #6272a4;
+  --border: #44475a;
+  --input: #44475a;
+  --card: #44475a;
+  --card-foreground: #f8f8f2;
+  --sidebar: #21222c;
+}
+
+.theme-supabase {
+  --background: #1c1c1c;
+  --foreground: #ededed;
+  --primary: #3ecf8e;
+  --primary-foreground: #1c1c1c;
+  --muted: #2e2e2e;
+  --muted-foreground: #9ca3af;
+  --border: #2e2e2e;
+  --input: #2e2e2e;
+  --card: #2e2e2e;
+  --card-foreground: #ededed;
+  --sidebar: #171717;
+}
+
+.theme-cyberpunk {
+  --background: #0a0a12;
+  --foreground: #00ff9f;
+  --primary: #ff0055;
+  --primary-foreground: #ffffff;
+  --muted: #1a1a2e;
+  --muted-foreground: #b600ff;
+  --border: #ff0055;
+  --input: #1a1a2e;
+  --card: #121225;
+  --card-foreground: #00ff9f;
+  --sidebar: #05050a;
+}
+
+.theme-matrix {
+  --background: #000000;
+  --foreground: #00ff41;
+  --primary: #008f11;
+  --primary-foreground: #000000;
+  --muted: #0d0d0d;
+  --muted-foreground: #003b00;
+  --border: #008f11;
+  --input: #0d0d0d;
+  --card: #050505;
+  --card-foreground: #00ff41;
+  --sidebar: #000000;
+}
+
+.theme-forest {
+  --background: #061f1a;
+  --foreground: #e6f2f0;
+  --primary: #10b981;
+  --primary-foreground: #061f1a;
+  --muted: #0d2e28;
+  --muted-foreground: #648a82;
+  --border: #134e44;
+  --input: #0d2e28;
+  --card: #0d2e28;
+  --card-foreground: #e6f2f0;
+  --sidebar: #041411;
+}
+
+.theme-ocean {
+  --background: #082f49;
+  --foreground: #f0f9ff;
+  --primary: #0ea5e9;
+  --primary-foreground: #082f49;
+  --muted: #0c4a6e;
+  --muted-foreground: #7dd3fc;
+  --border: #075985;
+  --input: #0c4a6e;
+  --card: #0c4a6e;
+  --card-foreground: #f0f9ff;
+  --sidebar: #051e2e;
+}
+
+.theme-midnight {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --muted: #111111;
+  --muted-foreground: #888888;
+  --border: #333333;
+  --input: #111111;
+  --card: #111111;
+  --card-foreground: #ffffff;
+  --sidebar: #000000;
+}
+
+/* Base resets */
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
