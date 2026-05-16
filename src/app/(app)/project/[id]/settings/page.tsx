@@ -2,6 +2,7 @@ import { createClient } from "@/features/core/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { ProjectSettingsHeader } from "@/features/projects/components/settings/project-settings-header";
 import { ProjectSettingsTabs } from "@/features/projects/components/settings/project-settings-tabs";
+import { Suspense } from "react";
 
 interface ProjectSettingsPageProps {
   params: Promise<{ id: string }>;
@@ -24,7 +25,9 @@ export default async function ProjectSettingsPage({ params }: ProjectSettingsPag
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <ProjectSettingsHeader project={project} />
-      <ProjectSettingsTabs project={project} />
+      <Suspense fallback={<div className="flex-1 flex items-center justify-center">Carregando...</div>}>
+        <ProjectSettingsTabs project={project} />
+      </Suspense>
     </div>
   );
 }

@@ -22,6 +22,9 @@ export function TeamSettings({ project }: { project: any }) {
   const [selectedUser, setSelectedUser] = React.useState<any>(null)
   const [inviteRole, setInviteRole] = React.useState('collaborator')
   const [isLoading, setIsLoading] = React.useState(false)
+  const [origin, setOrigin] = React.useState('')
+  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null)
+  const [feedback, setFeedback] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const supabase = createClient()
 
   const fetchTeamData = async () => {
@@ -43,6 +46,12 @@ export function TeamSettings({ project }: { project: any }) {
   }
 
   React.useEffect(() => {
+    setOrigin(window.location.origin)
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUserId(user.id)
+    }
+    fetchUser()
     fetchTeamData()
   }, [project.id])
 
@@ -71,7 +80,8 @@ export function TeamSettings({ project }: { project: any }) {
   const handleInvite = async () => {
     const userToInvite = selectedUser || suggestions[0]
     if (!userToInvite) {
-      alert('Selecione um usuário válido da lista.')
+      console.warn('[TeamSettings] Tentativa de convite sem usuário selecionado')
+      setFeedback({ type: 'error', message: 'Selecione um usuário válido da lista.' })
       return
     }
     
@@ -89,9 +99,11 @@ export function TeamSettings({ project }: { project: any }) {
       })
 
     if (error) {
-      alert('Erro ao enviar convite: ' + error.message)
+      console.error('[TeamSettings] Erro ao enviar convite:', error)
+      setFeedback({ type: 'error', message: 'Erro ao enviar convite: ' + error.message })
     } else {
-      alert('Convite enviado com sucesso!')
+      console.log('[TeamSettings] Convite enviado com sucesso')
+      setFeedback({ type: 'success', message: 'Convite enviado com sucesso!' })
       setInviteNick('')
       setSelectedUser(null)
       setSuggestions([])
@@ -105,14 +117,20 @@ export function TeamSettings({ project }: { project: any }) {
       .update({ status })
       .eq('id', requestId)
     
-    if (error) alert('Erro: ' + error.message)
-    else fetchTeamData()
+    if (error) {
+      console.error('[TeamSettings] Erro ao atualizar solicitação:', error)
+      setFeedback({ type: 'error', message: 'Erro ao atualizar solicitação: ' + error.message })
+    } else {
+      setFeedback({ type: 'success', message: `Solicitação ${status === 'approved' ? 'aprovada' : 'recusada'} com sucesso.` })
+      fetchTeamData()
+    }
   }
 
   const copyInviteLink = () => {
-    const url = `${window.location.origin}/join/${project.invite_code}`
+    const url = `${origin}/join/${project.invite_code}`
     navigator.clipboard.writeText(url)
-    alert('Link de convite copiado!')
+    console.log('[TeamSettings] Link copiado para a área de clipboard')
+    setFeedback({ type: 'success', message: 'Link de convite copiado para a área de transferência!' })
   }
 
   const roleLabels: any = {
@@ -133,6 +151,18 @@ export function TeamSettings({ project }: { project: any }) {
           </div>
         </div>
 
+        {feedback && (
+          <div className={cn(
+            "p-4 rounded-xl border flex items-center justify-between text-sm font-medium animate-in fade-in duration-300",
+            feedback.type === 'success' ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-red-500/10 border-red-500/30 text-red-500"
+          )}>
+            <span>{feedback.message}</span>
+            <button onClick={() => setFeedback(null)} className="hover:opacity-70 transition-opacity">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Invite Link Section */}
         <div className="bg-card border border-border p-8 rounded-2xl space-y-6 border-dashed border-primary/30 relative overflow-hidden group">
           <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -151,7 +181,7 @@ export function TeamSettings({ project }: { project: any }) {
             </Button>
           </div>
           <div className="relative bg-muted/50 p-4 rounded-xl border border-border font-mono text-xs text-muted-foreground truncate flex items-center justify-between">
-            <span>{typeof window !== 'undefined' ? `${window.location.origin}/join/${project.invite_code}` : ''}</span>
+            <span>{origin ? `${origin}/join/${project.invite_code}` : ''}</span>
           </div>
         </div>
 
@@ -277,7 +307,7 @@ export function TeamSettings({ project }: { project: any }) {
                     <div className="flex items-center gap-2">
                       <span className="font-bold">@{member.profiles?.nickname}</span>
                       {member.role === 'owner' && <Crown className="w-3 h-3 text-yellow-500" />}
-                      {member.user_id === (typeof window !== 'undefined' && project.user_id) && <span className="bg-muted px-2 py-0.5 rounded text-[10px] text-muted-foreground">Você</span>}
+                      {member.user_id === currentUserId && <span className="bg-muted px-2 py-0.5 rounded text-[10px] text-muted-foreground">Você</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={cn(

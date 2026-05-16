@@ -15,36 +15,47 @@ interface ProjectTasksProps {
 export function ProjectTasks({ project }: ProjectTasksProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [tasks, setTasks] = React.useState<any[]>([])
+  const [columns, setColumns] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const supabase = createClient()
 
-  const fetchTasks = async () => {
-    const { data } = await supabase
+  const fetchData = async () => {
+    const { data: tasksData } = await supabase
       .from('tasks')
       .select('*, assigned_profile:assigned_to(name, nickname)')
       .eq('project_id', project.id)
       .order('created_at', { ascending: false })
-    if (data) setTasks(data)
+    if (tasksData) setTasks(tasksData)
+
+    const { data: projData } = await supabase
+      .from('projects')
+      .select('kanban_columns')
+      .eq('id', project.id)
+      .single()
+    if (projData?.kanban_columns) setColumns(projData.kanban_columns)
+    else if (project.kanban_columns) setColumns(project.kanban_columns)
+
     setIsLoading(false)
   }
 
   React.useEffect(() => {
-    fetchTasks()
+    fetchData()
 
     // Realtime subscription
-    const channel = supabase
-      .channel(`project-tasks-${project.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks', filter: `project_id=eq.${project.id}` },
-        () => fetchTasks()
-      )
+    const channel = supabase.channel(`project-tasks-${project.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `project_id=eq.${project.id}` }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${project.id}` }, () => fetchData())
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [project.id])
+
+  const getColumnDetails = (statusId: string) => {
+    const col = columns.find(c => c.id === statusId)
+    return col || { label: statusId, color: 'border-border' }
+  }
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 overflow-y-auto h-full">
@@ -89,41 +100,44 @@ export function ProjectTasks({ project }: ProjectTasksProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => (
-            <div 
-              key={task.id} 
-              className="bg-card border border-border p-4 rounded-xl flex items-center justify-between group hover:border-primary/50 transition-all shadow-sm"
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  task.status === 'todo' ? "bg-muted" : task.status === 'in_progress' ? "bg-blue-500" : "bg-emerald-500"
-                )} />
-                <div className="min-w-0">
-                  <h3 className="font-bold truncate">{task.title}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[10px] font-bold text-primary uppercase bg-primary/5 px-2 py-0.5 rounded border border-primary/20">
-                      {task.type}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate">
-                      {task.assigned_profile ? `@${task.assigned_profile.nickname}` : 'Não atribuído'}
-                    </span>
+          {tasks.map((task) => {
+            const colDetails = getColumnDetails(task.status)
+            return (
+              <div 
+                key={task.id} 
+                className="bg-card border border-border p-4 rounded-xl flex items-center justify-between group hover:border-primary/50 transition-all shadow-sm"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    colDetails.color.includes('blue') ? "bg-blue-500" : 
+                    colDetails.color.includes('emerald') ? "bg-emerald-500" : 
+                    colDetails.color.includes('primary') ? "bg-primary" : "bg-muted"
+                  )} />
+                  <div className="min-w-0">
+                    <h3 className="font-bold truncate">{task.title}</h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[10px] font-bold text-primary uppercase bg-primary/5 px-2 py-0.5 rounded border border-primary/20">
+                        {task.type}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {task.assigned_profile ? `@${task.assigned_profile.nickname}` : 'Não atribuído'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-4 text-xs font-bold uppercase text-muted-foreground">
-                <span className={cn(
-                  "px-3 py-1 rounded-full border",
-                  task.status === 'todo' ? "border-border text-muted-foreground" : 
-                  task.status === 'in_progress' ? "border-blue-500/30 text-blue-400" : 
-                  "border-emerald-500/30 text-emerald-400"
-                )}>
-                  {task.status === 'todo' ? 'A Fazer' : task.status === 'in_progress' ? 'Em Progresso' : 'Concluído'}
-                </span>
+                <div className="flex items-center gap-4 text-xs font-bold uppercase text-muted-foreground">
+                  <span className={cn(
+                    "px-3 py-1 rounded-full border",
+                    colDetails.color.replace('border-', 'text-').replace('/50', '')
+                  )}>
+                    {colDetails.label}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

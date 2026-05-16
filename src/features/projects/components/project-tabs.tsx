@@ -14,6 +14,9 @@ import { ProjectOverview } from './project-overview'
 import { ProjectTasks } from './tasks/project-tasks'
 import { ProjectKanban } from './tasks/project-kanban'
 
+import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
+
 interface ProjectTabsProps {
   project: {
     id: string
@@ -31,16 +34,19 @@ const tabs = [
 ]
 
 export function ProjectTabs({ project }: ProjectTabsProps) {
-  const [activeTab, setActiveTab] = React.useState('overview')
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'overview'
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="border-b border-border bg-background px-6 shrink-0">
         <div className="flex gap-8">
           {tabs.map((tab) => (
-            <button
+            <Link
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              href={`${pathname}?tab=${tab.id}`}
+              scroll={false}
               className={cn(
                 "flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all relative top-[1px]",
                 activeTab === tab.id
@@ -50,7 +56,7 @@ export function ProjectTabs({ project }: ProjectTabsProps) {
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
