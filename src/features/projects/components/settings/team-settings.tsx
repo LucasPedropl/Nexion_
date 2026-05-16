@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Users, Link as LinkIcon, AtSign, Crown, MoreHorizontal } from 'lucide-react'
+import { Users, Link as LinkIcon, AtSign, Crown, MoreHorizontal, Copy, Check, X } from 'lucide-react'
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -16,6 +16,7 @@ import { cn } from '@/features/core/utils/cn'
 
 export function TeamSettings({ project }: { project: any }) {
   const [members, setMembers] = React.useState<any[]>([])
+  const [requests, setRequests] = React.useState<any[]>([])
   const [inviteNick, setInviteNick] = React.useState('')
   const [suggestions, setSuggestions] = React.useState<any[]>([])
   const [selectedUser, setSelectedUser] = React.useState<any>(null)
@@ -23,43 +24,42 @@ export function TeamSettings({ project }: { project: any }) {
   const [isLoading, setIsLoading] = React.useState(false)
   const supabase = createClient()
 
-  const fetchMembers = async () => {
-    const { data } = await supabase
+  const fetchTeamData = async () => {
+    // Buscar membros
+    const { data: teamMembers } = await supabase
       .from('project_members')
       .select('*, profiles(*)')
       .eq('project_id', project.id)
       .order('joined_at', { ascending: true })
-    if (data) setMembers(data)
+    if (teamMembers) setMembers(teamMembers)
+
+    // Buscar solicitações pendentes
+    const { data: joinRequests } = await supabase
+      .from('project_join_requests')
+      .select('*, profiles(*)')
+      .eq('project_id', project.id)
+      .eq('status', 'pending')
+    if (joinRequests) setRequests(joinRequests)
   }
 
   React.useEffect(() => {
-    fetchMembers()
+    fetchTeamData()
   }, [project.id])
 
   // Busca em tempo real de usuários
   React.useEffect(() => {
     const searchUsers = async () => {
-      if (inviteNick.length < 2 || selectedUser) {
+      if (inviteNick.length < 2 || selectedUser || inviteNick.startsWith('@')) {
         setSuggestions([])
         return
       }
 
-      console.log('Buscando usuários por:', inviteNick)
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id, name, nickname, email')
-        .or(`nickname.ilike.%${inviteNick}%,email.ilike.%${inviteNick}%,name.ilike.%${inviteNick}%`)
+        .or(`nickname.ilike.%${inviteNick}%,email.ilike.%${inviteNick}%`)
         .limit(5)
       
-      if (error) {
-        console.error('Erro na busca:', error)
-        return
-      }
-
-      console.log('Usuários encontrados:', data)
-      
-      // Filtrar usuários que já são membros
       const filtered = (data || []).filter(u => !members.some(m => m.user_id === u.id))
       setSuggestions(filtered)
     }
@@ -76,8 +76,6 @@ export function TeamSettings({ project }: { project: any }) {
     }
     
     setIsLoading(true)
-    
-    // 2. Criar convite pendente
     const { data: userData } = await supabase.auth.getUser()
     const { error } = await supabase
       .from('project_invitations')
@@ -101,6 +99,22 @@ export function TeamSettings({ project }: { project: any }) {
     setIsLoading(false)
   }
 
+  const handleRequest = async (requestId: string, status: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('project_join_requests')
+      .update({ status })
+      .eq('id', requestId)
+    
+    if (error) alert('Erro: ' + error.message)
+    else fetchTeamData()
+  }
+
+  const copyInviteLink = () => {
+    const url = `${window.location.origin}/join/${project.invite_code}`
+    navigator.clipboard.writeText(url)
+    alert('Link de convite copiado!')
+  }
+
   const roleLabels: any = {
     owner: 'DONO DO PROJETO',
     admin: 'ADMINISTRADOR',
@@ -115,20 +129,73 @@ export function TeamSettings({ project }: { project: any }) {
           <Users className="w-6 h-6 text-primary" />
           <div>
             <h2 className="text-xl font-bold">Gerenciar Acesso</h2>
-            <p className="text-sm text-muted-foreground">Convide membros ou sincronize com o GitHub.</p>
+            <p className="text-sm text-muted-foreground">Convide membros ou compartilhe o link do projeto.</p>
           </div>
         </div>
 
-        {/* GitHub Sync */}
-        <div className="bg-card border border-border p-8 rounded-2xl space-y-6 opacity-60">
-          <div className="flex items-center gap-3">
-            <GithubIcon className="w-5 h-5" />
-            <h3 className="font-bold">Sincronizar com Organização GitHub</h3>
+        {/* Invite Link Section */}
+        <div className="bg-card border border-border p-8 rounded-2xl space-y-6 border-dashed border-primary/30 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <LinkIcon className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold">Link de Convite</h3>
+                <p className="text-xs text-muted-foreground">Qualquer pessoa com este link pode solicitar entrada no projeto.</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={copyInviteLink} className="gap-2 border-primary/30 hover:border-primary text-primary hover:bg-primary/5">
+              <Copy className="w-4 h-4" /> Copiar Link
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Você precisa conectar sua conta do GitHub nas configurações globais para usar este recurso.
-          </p>
+          <div className="relative bg-muted/50 p-4 rounded-xl border border-border font-mono text-xs text-muted-foreground truncate flex items-center justify-between">
+            <span>{typeof window !== 'undefined' ? `${window.location.origin}/join/${project.invite_code}` : ''}</span>
+          </div>
         </div>
+
+        {/* Requests Section */}
+        {requests.length > 0 && (
+          <div className="space-y-4 animate-in slide-in-from-top-4 duration-500">
+            <h3 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Solicitações Pendentes ({requests.length})
+            </h3>
+            <div className="space-y-3">
+              {requests.map((req) => (
+                <div key={req.id} className="bg-card border border-amber-500/20 p-5 rounded-2xl flex items-center justify-between group hover:border-amber-500/50 transition-all shadow-lg shadow-amber-500/5">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center font-bold text-amber-500 text-lg shadow-inner">
+                        {req.profiles?.name?.[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground">@{req.profiles?.nickname}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{req.profiles?.email}</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleRequest(req.id, 'rejected')} 
+                        className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-4"
+                      >
+                        <X className="w-4 h-4 mr-2" /> Recusar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleRequest(req.id, 'approved')}
+                        className="bg-amber-500 hover:bg-amber-600 text-white px-6 shadow-lg shadow-amber-500/20"
+                      >
+                        <Check className="w-4 h-4 mr-2" /> Aprovar
+                      </Button>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Invite Form */}
         <div className="bg-card border border-border p-8 rounded-2xl space-y-6">
@@ -210,7 +277,7 @@ export function TeamSettings({ project }: { project: any }) {
                     <div className="flex items-center gap-2">
                       <span className="font-bold">@{member.profiles?.nickname}</span>
                       {member.role === 'owner' && <Crown className="w-3 h-3 text-yellow-500" />}
-                      {member.user_id === project.user_id && <span className="bg-muted px-2 py-0.5 rounded text-[10px] text-muted-foreground">Você</span>}
+                      {member.user_id === (typeof window !== 'undefined' && project.user_id) && <span className="bg-muted px-2 py-0.5 rounded text-[10px] text-muted-foreground">Você</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={cn(

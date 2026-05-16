@@ -27,20 +27,25 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: Não remova supabase.auth.getUser(). Isso é necessário para
-  // o Supabase atualizar a sessão caso ela expire.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAuthRoute = 
-    request.nextUrl.pathname.startsWith('/login') || 
-    request.nextUrl.pathname.startsWith('/register') || 
-    request.nextUrl.pathname.startsWith('/auth')
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/auth')
+  const isOnboardingRoute = pathname.startsWith('/onboarding')
+  const isJoinRoute = pathname.startsWith('/join')
 
-  if (!user && !isAuthRoute) {
+  // 1. Liberar rotas de autenticação e convite
+  if (isAuthRoute || isJoinRoute || isOnboardingRoute) {
+    return supabaseResponse
+  }
+
+  // 2. Se não estiver logado e não for rota liberada, vai para login
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
     return NextResponse.redirect(url)
   }
 

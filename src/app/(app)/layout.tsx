@@ -25,8 +25,8 @@ export default async function AppLayout({
     .eq("id", user.id)
     .single();
 
-  if (!profile) {
-    redirect("/login");
+  if (!profile || !profile.nickname) {
+    redirect("/onboarding");
   }
 
   return (

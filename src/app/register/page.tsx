@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { RegisterForm } from "@/features/auth/components/register-form";
 
 export default function RegisterPage() {
@@ -23,7 +24,9 @@ export default function RegisterPage() {
 
         <div className="w-full bg-[#232221] p-8 rounded-2xl border border-border shadow-xl">
           <h2 className="text-xl font-semibold mb-8">Criar nova conta</h2>
-          <RegisterForm />
+          <Suspense fallback={<div className="text-muted-foreground text-sm">Carregando...</div>}>
+            <RegisterForm />
+          </Suspense>
         </div>
       </div>
     </main>

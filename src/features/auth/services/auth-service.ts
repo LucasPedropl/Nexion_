@@ -4,7 +4,7 @@ import { createClient } from '@/features/core/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '../schemas/auth-schema'
 
-export async function login(formData: LoginInput) {
+export async function login(formData: LoginInput, redirectTo?: string) {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword(formData)
@@ -13,10 +13,10 @@ export async function login(formData: LoginInput) {
     return { error: error.message }
   }
 
-  redirect('/')
+  redirect(redirectTo || '/')
 }
 
-export async function signup(formData: RegisterInput) {
+export async function signup(formData: RegisterInput, redirectTo?: string) {
   const supabase = await createClient()
 
   // 1. Criar o usuário no Auth
@@ -37,11 +37,10 @@ export async function signup(formData: RegisterInput) {
   })
 
   if (profileError) {
-    // Idealmente aqui deletaríamos o user do auth se falhar, mas o RLS/Trigger resolveria melhor.
     return { error: 'Erro ao criar perfil: ' + profileError.message }
   }
 
-  redirect('/')
+  redirect(redirectTo || '/')
 }
 
 export async function logout() {
