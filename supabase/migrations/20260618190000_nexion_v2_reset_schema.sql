@@ -1,0 +1,2 @@
+-- Nexion v2 schema (applied via Supabase MCP)
+-- See migration: nexion_v2_reset_schema

@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexion — Monorepo
 
-## Getting Started
+Plataforma SaaS para gestão de documentação e projetos de software (TCC UTFPR).
 
-First, run the development server:
+## Estrutura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+apps/web          → Next.js (frontend)
+packages/database → Schemas Zod e tipos compartilhados
+packages/config   → Configurações TypeScript
+supabase/         → (próxima etapa) migrations e edge functions
+docs/             → Documentação acadêmica (TCC)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desenvolvimento
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+App disponível em `http://localhost:3000`.
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Monorepo:** pnpm workspaces + Turborepo
+- **Frontend:** Next.js 16, React 19, Tailwind CSS 4
+- **Backend:** Supabase (integração pendente)
+- **Forms:** react-hook-form + Zod
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estado atual
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Auth:** Supabase Auth (login, registro, sessão via cookies)
+- **Projetos:** CRUD conectado ao Postgres com RLS
+- **Schema v2:** profiles, projects, project_members, kanban_columns, tasks, documents, notifications
 
-## Deploy on Vercel
+## Variáveis de ambiente
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Copie para `apps/web/.env.local`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
